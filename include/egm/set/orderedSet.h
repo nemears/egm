@@ -1,17 +1,17 @@
 #pragma once
 
-#include "uml/set/abstractSet.h"
-#include "uml/set/doNothingPolicy.h"
-#include "uml/set/privateSet.h"
-#include "uml/set/set.h"
-#include "uml/managers/umlPtr.h"
+#include "egm/set/abstractSet.h"
+#include "egm/set/doNothingPolicy.h"
+#include "egm/set/privateSet.h"
+#include "egm/set/set.h"
+#include "egm/managedPtr.h"
 #include <memory>
 
 namespace EGM {
 
-    template <class T>
+    template <template <class> class T, class Manager>
     struct OrderedSetNode  {
-        ManagedPtr<T> m_ptr;
+        ManagedPtr<T<typename Manager::template GenBaseHierarchy<T>>> m_ptr;
         std::shared_ptr<OrderedSetNode> m_prev;
         std::shared_ptr<OrderedSetNode> m_next;
         OrderedSetNode(const OrderedSetNode& rhs) {
@@ -30,19 +30,21 @@ namespace EGM {
         }
         template <class V>
         OrderedSetNode(const ManagedPtr<V>& ptr) {
-            m_ptr = ptr;
+            this->m_ptr = ptr;
         }
     };
 
-    template <class T>
-    class OrderedSetDataPolicy : virtual public SetDataPolicy<T> {
+    template <template <class> class T, class U>
+    class OrderedSetDataPolicy : virtual public SetDataPolicy<T, typename U::manager> {
         protected:
-            std::shared_ptr<OrderedSetNode<T>> m_first;
-            std::shared_ptr<OrderedSetNode<T>> m_last;
+            using ManagedType = T<typename U::manager::template GenBaseHierarchy<T>>;
+
+            std::shared_ptr<OrderedSetNode<T, typename U::manager>> m_first;
+            std::shared_ptr<OrderedSetNode<T, typename U::manager>> m_last;
             
             void allocatePtr(AbstractElementPtr ptr, SetStructure& set) override {
-                SetDataPolicy<T>::allocatePtr(ptr, set);
-                std::shared_ptr<OrderedSetNode<T>> orderedPtr = std::make_shared<OrderedSetNode<T>>(ptr);
+                SetDataPolicy<T, U>::allocatePtr(ptr, set);
+                std::shared_ptr<OrderedSetNode<T, typename U::manager>> orderedPtr = std::make_shared<OrderedSetNode<T, typename U::manager>>(ptr);
                 if (!m_first) {
                     m_first = orderedPtr;
                 }
@@ -80,7 +82,7 @@ namespace EGM {
             class iterator : public AbstractSet::iterator {
                 friend class OrderedSetDataPolicy;
                 const OrderedSetDataPolicy& m_set;
-                std::shared_ptr<OrderedSetNode<T>> m_curr;
+                std::shared_ptr<OrderedSetNode<T, typename U::manager>> m_curr;
                 protected:
                     AbstractElementPtr getCurr() const override {
                         if (m_curr.get()) {
@@ -111,10 +113,10 @@ namespace EGM {
                         m_curr = rhs.m_curr;
                     }
                     iterator(const OrderedSetDataPolicy& set) : m_set(set) {};
-                    T& operator*() {
-                        return dynamic_cast<T&>(*getCurr());
+                    T<ManagedType>& operator*() {
+                        return dynamic_cast<ManagedType&>(*getCurr());
                     }
-                    ManagedPtr<T> operator->() {
+                    ManagedPtr<ManagedType> operator->() {
                         return getCurr(); 
                     }
                     iterator operator++() {
@@ -143,17 +145,17 @@ namespace EGM {
             std::unique_ptr<AbstractSet::iterator> endPtr() const override {
                 return std::unique_ptr<iterator>(new iterator(end()));
             }
-            ManagedPtr<T> front() const {
+            ManagedPtr<ManagedType> front() const {
                 if (m_first.get()) {
                     return m_first->m_ptr;
                 }
-                return ManagedPtr<T>();
+                return ManagedPtr<ManagedType>();
             }
-            ManagedPtr<T> back() const {
+            ManagedPtr<ManagedType> back() const {
                 if (m_last.get()) {
                     return m_last->m_ptr;
                 }
-                return ManagedPtr<T>();
+                return ManagedPtr<ManagedType>();
             }
             iterator begin() const {
                 iterator it(*this);
@@ -170,10 +172,10 @@ namespace EGM {
             SetType setType() const override {
                 return SetType::ORDERED_SET;
             }
-            ManagedPtr<T> get(ID id) const {
-                return SetDataPolicy<T>::get(id);
+            ManagedPtr<ManagedType> get(ID id) const {
+                return SetDataPolicy<T, U>::get(id);
             }
-            ManagedPtr<T> get(size_t index) const {
+            ManagedPtr<ManagedType> get(size_t index) const {
                 size_t currIndex = 0;
                 auto currPtr = m_first;
                 while (currIndex != index && currPtr) {
@@ -188,7 +190,7 @@ namespace EGM {
     };
 
     template <template <class> class T, class U, class ApiPolicy = DoNothingPolicy>
-    using ReadOnlyOrderedSet = PrivateSet<T, U, OrderedSetDataPolicy<T<typename U::Manager::template GenBaseHierarchy<T>>>, ApiPolicy>;
+    using ReadOnlyOrderedSet = PrivateSet<T, U, OrderedSetDataPolicy<T, U>, ApiPolicy>;
     
     template <template <class> class T, class U, class ApiPolicy = DoNothingPolicy>
     class OrderedSet : public ReadOnlyOrderedSet<T, U, ApiPolicy> , public AbstractReadableSet {

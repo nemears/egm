@@ -14,7 +14,6 @@ namespace EGM {
     template <template <class> class T, class U>
     class SetDataPolicy : virtual public AbstractSet {
         protected:
-            // using ManagedType = T<typename U::manager::template GenBaseHierarchy<T<typename U::manager::BaseElement>::Info::template Type>>;
             using ManagedType = T<typename U::manager::template GenBaseHierarchy<T>>;
             std::unordered_map<ID, ManagedPtr<ManagedType>> m_data;
             class iterator : public AbstractSet::iterator {
@@ -118,7 +117,7 @@ namespace EGM {
                         return ++(*this);
                     }
             };
-     protected:
+         protected:
             void allocatePtr(AbstractElementPtr ptr, SetStructure& set) override {
                 if (m_data.count(ptr.id())) {
                     if (m_structure.get() == &set) {
