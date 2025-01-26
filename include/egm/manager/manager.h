@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstddef>
+#include <list>
 #include <mutex>
 #include <memory>
 #include <unordered_map>
@@ -9,8 +10,8 @@
 #include "abstractManager.h"
 #include "managerTypes.h"
 #include "egm/set/abstractSet.h"
-#include "egm/policies/filePersistencePolicy.h"
-#include "egm/policies/yamlSerializationPolicy.h"
+// #include "egm/policies/filePersistencePolicy.h"
+// #include "egm/policies/yamlSerializationPolicy.h"
 #include "egm/managedPtr.h"
 
 namespace EGM {
@@ -54,6 +55,10 @@ namespace EGM {
                 PersistencePolicy::eraseEl(id);
             }
     };
+
+    class FilePersistencePolicy;
+    template <class>
+    class YamlSerializationPolicy;
    
     // manager
     template <class TypePolicyList, class StoragePolicy = SerializedStoragePolicy<YamlSerializationPolicy<TypePolicyList>, FilePersistencePolicy>>

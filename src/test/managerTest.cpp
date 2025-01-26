@@ -1,13 +1,5 @@
 #include "gtest/gtest.h"
-#include <memory>
-#include "egm/manager/manager.h"
-#include "egm/manager/abstractManager.h"
-#include "egm/manager/typeInfo.h"
-#include "egm/manager/dummyManager.h"
-#include "egm/set/abstractSet.h"
-#include "egm/set/set.h"
-#include "egm/set/singleton.h"
-#include "egm/util/templateTypeList.h"
+#include "egm/egm.h"
 
 using namespace EGM;
 
