@@ -60,6 +60,9 @@ namespace EGM {
         protected:
             U& m_el;
             std::unique_ptr<OppositeInterface<ManagedType>> m_opposite = std::unique_ptr<NoOpposite<ManagedType>>(new NoOpposite<ManagedType>());
+    
+            void allocatePtr(__attribute__((unused)) AbstractElementPtr ptr, __attribute__((unused)) SetStructure& set) override {}
+            void deAllocatePtr(__attribute__((unused)) AbstractElementPtr ptr) override {}
 
             void runAddPolicy(AbstractElement& el) override {
                 ApiPolicy::elementAdded(dynamic_cast<ManagedType&>(el), m_el);
@@ -439,6 +442,9 @@ namespace EGM {
             }
             PtrSet ptrs() const {
                 return PtrSet(this);
+            }
+            IDSet ids() const override {
+                return IDSet(this);
             }
     };
 }

@@ -28,18 +28,7 @@ namespace EGM {
             >
     class PrivateSet;
 
-    class AbstractPtr {
-        
-        friend struct ManagerNode;
-
-        template <class Tlist, class P1>
-        friend class Manager;
-        
-        protected:
-            std::weak_ptr<ManagerNode> m_node;
-            ID m_id = ID::nullID();
-            virtual void setPtr(std::shared_ptr<AbstractElement> ptr) = 0;
-    };
+    
 
     template <class T>
     class ManagedPtr : public AbstractPtr {
@@ -79,7 +68,6 @@ namespace EGM {
                 } 
             }
         protected:
-
             std::weak_ptr<T> m_ptr;
 
             void reindex(ID newID, AbstractElement* el) {

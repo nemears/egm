@@ -2,8 +2,7 @@
 
 #include <memory>
 #include <unordered_set>
-#include "egm/manager/abstractElement.h"
-#include <egm/managedPtr.h>
+#include "egm/id.h"
 
 namespace EGM {
     enum class SetType {
@@ -26,11 +25,29 @@ namespace EGM {
         NONE
     };
 
-    class SetStructure;
-    template <class S, class WrapperPolicy>
+    class AbstractSet;
+
+    class SetStructure {
+        public:
+            AbstractSet& m_set;
+            std::unordered_set<std::shared_ptr<SetStructure>> m_subSetsWithData;
+            std::unordered_set<std::shared_ptr<SetStructure>> m_superSets;
+            std::unordered_set<std::shared_ptr<SetStructure>> m_subSets;
+            std::unordered_set<std::shared_ptr<SetStructure>> m_redefinedSets;
+            std::shared_ptr<SetStructure> m_rootRedefinedSet;
+            size_t m_size = 0;
+            CompositionType m_composition = CompositionType::NONE;
+            SetStructure(AbstractSet& set) : m_set(set) {}
+    };
+
+    template <class>
+    class ManagedPtr;
+    class AbstractElement;
+    using AbstractElementPtr = ManagedPtr<AbstractElement>;
+    template <class, class>
     class WrapperSet;
     struct IDPolicy;
-    typedef WrapperSet<ID, IDPolicy> IDSet;
+    using IDSet = WrapperSet<ID, IDPolicy>;
 
     class AbstractSet {
 
@@ -69,8 +86,8 @@ namespace EGM {
             virtual void innerAdd(AbstractElementPtr ptr) = 0;
             virtual void nonOppositeRemove(AbstractElementPtr ptr) = 0;
             virtual void innerRemove(AbstractElementPtr ptr) = 0;
-            virtual void allocatePtr(__attribute__((unused)) AbstractElementPtr ptr, __attribute__((unused)) SetStructure& set) {}
-            virtual void deAllocatePtr(__attribute__((unused)) AbstractElementPtr ptr) {}
+            virtual void allocatePtr(__attribute__((unused)) AbstractElementPtr ptr, __attribute__((unused)) SetStructure& set) = 0;
+            virtual void deAllocatePtr(__attribute__((unused)) AbstractElementPtr ptr) = 0;
 
             class iterator {
                 template <class Tlist, class P1>
@@ -103,39 +120,141 @@ namespace EGM {
                     }
             };
         public:
-            AbstractSet();
-            virtual ~AbstractSet();
-            virtual void subsets(AbstractSet& superSet);
-            virtual void redefines(AbstractSet& redefinedSet);
-            void setComposition(CompositionType composition);
+            AbstractSet() {
+                m_structure = std::make_shared<SetStructure>(*this);
+                m_structure->m_rootRedefinedSet = m_structure;
+            }
+            virtual ~AbstractSet() {
+                for (auto subSet : m_structure->m_subSets) {
+                    auto superSetsIt = subSet->m_superSets.begin();
+                    while (
+                            superSetsIt != subSet->m_superSets.end() &&
+                            (*superSetsIt).get() != m_structure->m_rootRedefinedSet.get()) 
+                    {
+                        superSetsIt++;
+                    }
+                    if (superSetsIt != subSet->m_superSets.end()) {
+                        subSet->m_superSets.erase(superSetsIt);
+                    }
+                }
+                for (auto superSet : m_structure->m_superSets) {
+                    auto subSetsIt = superSet->m_subSets.begin();
+                    while (
+                        subSetsIt != superSet->m_subSets.end() &&
+                        (*subSetsIt).get() != m_structure->m_rootRedefinedSet.get()        
+                    ) {
+                        subSetsIt++;
+                    }
+                    if (subSetsIt != superSet->m_subSets.end()) {
+                        superSet->m_subSets.erase(subSetsIt);
+                    }
+                    
+                    auto subSetsWithDataIt = superSet->m_subSetsWithData.begin();
+                    while (
+                        subSetsWithDataIt != superSet->m_subSetsWithData.end() &&
+                        (*subSetsWithDataIt).get() != m_structure.get()
+                    ) {
+                        subSetsWithDataIt++;
+                    }
+                    if (subSetsWithDataIt != superSet->m_subSetsWithData.end()) {
+                        superSet->m_subSetsWithData.erase(subSetsWithDataIt);
+                    }
+                }
+                for (auto redefinedSet : m_structure->m_redefinedSets) {
+                    redefinedSet->m_rootRedefinedSet.reset();
+                }
+                m_structure->m_subSets.clear();
+                m_structure->m_superSets.clear();
+                m_structure->m_redefinedSets.clear();
+                m_structure->m_subSetsWithData.clear();
+                m_structure->m_rootRedefinedSet.reset();
+                m_structure.reset();
+            }
+            virtual void subsets(AbstractSet& superSet) {
+                auto rootRedefinedSet = m_structure->m_rootRedefinedSet;
+                auto superSetRootRedefinedSet = superSet.m_structure->m_rootRedefinedSet;
+                superSetRootRedefinedSet->m_subSets.insert(rootRedefinedSet);
+                rootRedefinedSet->m_superSets.insert(superSetRootRedefinedSet);
+                if (superSetRootRedefinedSet->m_composition != CompositionType::NONE) {
+                    rootRedefinedSet->m_composition = superSetRootRedefinedSet->m_composition;
+                }
+            }
+            virtual void redefines(AbstractSet& redefinedSet) {
+                auto redefinedStructure = redefinedSet.m_structure->m_rootRedefinedSet;
+                for (auto superSet : redefinedStructure->m_superSets) {
+                    m_structure->m_superSets.insert(superSet);
+                    superSet->m_subSets.erase(redefinedStructure);
+                    superSet->m_subSets.insert(m_structure);
+                }
+                for (auto subSet : redefinedStructure->m_subSets) {
+                    m_structure->m_subSets.insert(subSet);
+                    subSet->m_superSets.erase(redefinedStructure);
+                    subSet->m_superSets.insert(m_structure);
+                }
+                for (auto redefinedSetRedefinedSet : redefinedStructure->m_redefinedSets) {
+                    m_structure->m_redefinedSets.insert(redefinedSetRedefinedSet);
+                    redefinedSetRedefinedSet->m_rootRedefinedSet = m_structure;
+                    redefinedSetRedefinedSet->m_redefinedSets.erase(redefinedStructure);
+                    redefinedSetRedefinedSet->m_redefinedSets.insert(m_structure);
+                }
+                m_structure->m_redefinedSets.insert(redefinedStructure);
+                redefinedStructure->m_superSets.clear();
+                redefinedStructure->m_subSets.clear();
+                redefinedStructure->m_redefinedSets.clear();
+                redefinedStructure->m_rootRedefinedSet = m_structure;
+                m_structure->m_rootRedefinedSet = m_structure;
+                if (m_structure->m_composition != CompositionType::NONE) {
+                    redefinedSet.setComposition(m_structure->m_composition);
+                } else if (redefinedStructure->m_composition != CompositionType::NONE) {
+                    this->setComposition(redefinedStructure->m_composition);
+                }
+            }
+            void setComposition(CompositionType composition) {
+                m_structure->m_composition = composition;
+            }
+            CompositionType getComposition() const {
+                return m_structure->m_rootRedefinedSet->m_composition;
+            }
             virtual std::unique_ptr<iterator> beginPtr() const = 0;
             virtual std::unique_ptr<iterator> endPtr() const = 0;
-            CompositionType getComposition() const;
             virtual bool contains(AbstractElementPtr ptr) const = 0;
             virtual bool contains(ID id) const = 0;
-            size_t size() const;
-            bool empty() const;
+            size_t size() const {
+                return m_structure->m_size;
+            }
+            bool empty() const {
+                return m_structure->m_size == 0;
+            }
             virtual SetType setType() const = 0;
             virtual bool readonly() const {
                 return true;
             }
-            bool rootSet() const;
-            bool isSubSetOf(AbstractSet& set) const;
-            AbstractSet* subSetContains(ID id) const;
-            IDSet ids() const;
-    };
-
-    class SetStructure {
-        public:
-            AbstractSet& m_set;
-            std::unordered_set<std::shared_ptr<SetStructure>> m_subSetsWithData;
-            std::unordered_set<std::shared_ptr<SetStructure>> m_superSets;
-            std::unordered_set<std::shared_ptr<SetStructure>> m_subSets;
-            std::unordered_set<std::shared_ptr<SetStructure>> m_redefinedSets;
-            std::shared_ptr<SetStructure> m_rootRedefinedSet;
-            size_t m_size = 0;
-            CompositionType m_composition = CompositionType::NONE;
-            SetStructure(AbstractSet& set) : m_set(set) {}
+            bool rootSet() const {
+                return m_structure->m_rootRedefinedSet == m_structure;
+            }
+            bool isSubSetOf(AbstractSet& set) const {
+                std::list<std::shared_ptr<SetStructure>> queue = {m_structure};
+                while (!queue.empty()) {
+                    auto front = queue.front();
+                    queue.pop_front();
+                    if (front == set.m_structure) {
+                        return true;
+                    }
+                    for (auto superSet : front->m_superSets) {
+                        queue.push_back(superSet);
+                    }
+                }
+                return false;
+            }
+            AbstractSet* subSetContains(ID id) const {
+                for (auto subSet : m_structure->m_rootRedefinedSet->m_subSets) {
+                    if (subSet->m_set.contains(id)) {
+                        return &subSet->m_set;
+                    }
+                }
+                return 0;
+            }
+            virtual IDSet ids() const = 0;
     };
 
 

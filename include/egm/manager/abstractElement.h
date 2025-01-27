@@ -2,6 +2,8 @@
 
 #include <memory>
 #include "egm/id.h"
+#include "egm/set/abstractSet.h"
+#include "abstractManager.h"
 
 namespace EGM {
 
@@ -54,7 +56,10 @@ namespace EGM {
             ID getID() const {
                 return m_id;
             }
-            void setID(ID id);
+            void setID(ID id) {
+                m_manager.reindex(m_id, id);
+                m_id = id; 
+            }
             inline friend bool operator==(const AbstractElement& lhs, const AbstractElement& rhs) {
                 return lhs.m_id == rhs.m_id;
             };
