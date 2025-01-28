@@ -28,9 +28,24 @@
       ];
     };
 
-    packages.x86_64-linux.hello = nixpkgs.legacyPackages.x86_64-linux.hello;
-
-    packages.x86_64-linux.default = self.packages.x86_64-linux.hello;
-
+    packages.x86_64-linux = {
+      egm = pkgs.stdenv.mkDerivation {
+        name = "egm";
+        src = ./.;
+        nativeBuildInputs = with pkgs; [ pkg-config ];
+        installPhase = ''
+          mkdir -p $out/lib/pkgconfig $out/include
+          cp -r $src/include/egm $out/include
+          echo "prefix=$out
+          
+          Name: egm
+          Description: generic object pool manager
+          Version: 0.0.1
+          Cflags: -I $out/include" > $out/lib/pkgconfig/egm.pc
+        '';
+      };
+      
+      default = self.packages.x86_64-linux.egm;
+    };
   };
 }
