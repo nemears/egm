@@ -86,8 +86,8 @@ namespace EGM {
             virtual void innerAdd(AbstractElementPtr ptr) = 0;
             virtual void nonOppositeRemove(AbstractElementPtr ptr) = 0;
             virtual void innerRemove(AbstractElementPtr ptr) = 0;
-            virtual void allocatePtr(__attribute__((unused)) AbstractElementPtr ptr, __attribute__((unused)) SetStructure& set) = 0;
-            virtual void deAllocatePtr(__attribute__((unused)) AbstractElementPtr ptr) = 0;
+            virtual void allocatePtr(__attribute__((unused)) AbstractElementPtr ptr, __attribute__((unused)) SetStructure& set);
+            virtual void deAllocatePtr(__attribute__((unused)) AbstractElementPtr ptr);
 
             class iterator {
                 template <class Tlist, class P1>

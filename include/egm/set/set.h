@@ -13,8 +13,9 @@ namespace EGM {
 
     template <template <class> class T, class U>
     class SetDataPolicy : virtual public AbstractSet {
-        protected:
+        public:
             using ManagedType = T<typename U::manager::template GenBaseHierarchy<T>>;
+        protected:
             std::unordered_map<ID, ManagedPtr<ManagedType>> m_data;
             class iterator : public AbstractSet::iterator {
                 friend class SetDataPolicy;

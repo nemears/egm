@@ -190,3 +190,8 @@ namespace std {
         return hasher(ptr.id().string());
     }
 }
+
+namespace EGM {
+    inline void AbstractSet::allocatePtr(__attribute__((unused)) AbstractElementPtr ptr, __attribute__((unused)) SetStructure& set) {}
+    inline void AbstractSet::deAllocatePtr(__attribute__((unused)) AbstractElementPtr ptr) {} 
+}

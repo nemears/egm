@@ -1,6 +1,6 @@
 # EGM
 
-EGM which stands for EGM Generic Manager is a C++ header only library to aide in creating an object pool of predefined DataTypes. The library is intended to be used with user defined types compatible with the library (see documentation below TODO) and then for those to be able to be used by your other programs. EGM is useful in substitution to a database with some more controls. There are predefined Managers with policies for storage, serialization and IO, but they can be tied in with existing databases or apis by providing your own policies (see documentation below TODO). EGM is the simple, configurable and fast Object Pool Manager that can be used for so many applications.
+EGM which stands for EGM Generic Manager is a C++ header only library to aide in creating an object pool of predefined DataTypes. The library is intended to be used with user defined types compatible with the library (see [Usage](##Usage) section below) and then for those to be able to be used by your other programs. EGM is useful in substitution to a database with some more controls. There are predefined Managers with policies for storage, serialization and IO, but they can be tied in with existing databases or apis by providing your own policies (documentation soon, but examples in `include/egm/policies`). EGM is the simple, configurable and fast Object Pool Manager that can be used for so many applications.
 
 ## Usage
 
@@ -10,9 +10,15 @@ EGM is made to be used, there is no executable distibuted by EGM, as well as no 
 // include egm/egm.h for all headers in the library
 #include "egm/egm.h"
 
-// All Types needed for EGM must be a policy class like below (a template class that inherits its template argument)
+// All Types needed for EGM must be a policy class like below
+// A policy class is a template class that inherits its template argument
 template <class ManagerPolicy>
 struct BaseType : public ManagerPolicy {
+    // an Info must be defined for proper use, this is just a basic DataType with no bases to
+    // inherit from so we just need to make Info = TypeInfo<BaseType>
+    // It is always safest to put this definition before any sets
+    using Info = TypeInfo<BaseType>;
+
     // Defining a Set of other types, all references to other data must be kept in a set
     // Sets can define how they relate to their polices as well, this one will just make sure
     // that the instance it is referencing also has a reference to it
@@ -21,13 +27,13 @@ struct BaseType : public ManagerPolicy {
     BaseSet& getReferences() { return references; }
 
     // init needs to be defined for proper execution
+    // it is best practice to make it private
+    private:
     void init() {
         references.opposite(&BaseSet::ManagedType::getReferences());
     }
+    public:
     
-    // an Info must be defined for proper use, this is just a basic DataType with no bases to
-    // inherit from so we just need to make Info = TypeInfo<BaseType>
-    using Info = TypeInfo<BaseType>;
 
     // Use the macro to cover default constructors with call to init,
     // and the necessary constructor for creation by a manager
@@ -49,15 +55,19 @@ namespace EGM {
 // lets define a type that inherits from base type but has field with a string
 template <class ManagerPolicy>
 struct DerivedType : public ManagerPolicy {
-    std::string field = "";
-
-    // nothing we need to initialize in the constructor
-    void init() {};
-
     // Define Info this time with TemplateTypeList of just the BaseType, the 
     // type list allows you to provide as many bases as you want, and you
     // don't have to worry about the diamon inheritance problem
     using Info = TypeInfo<DerivedType, TemplateTypeList<BaseType>>;
+    
+    // a simple data field
+    std::string field = "";
+
+    // nothing we need to initialize in the constructor
+    private:
+    void init() {};
+    public:
+
     MANAGED_ELEMENT_CONSTRUCTOR(DerivedType);
 };
 

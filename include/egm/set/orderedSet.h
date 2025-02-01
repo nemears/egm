@@ -35,7 +35,7 @@ namespace EGM {
     };
 
     template <template <class> class T, class U>
-    class OrderedSetDataPolicy : virtual public SetDataPolicy<T, typename U::manager> {
+    class OrderedSetDataPolicy : virtual public SetDataPolicy<T, U> {
         protected:
             using ManagedType = T<typename U::manager::template GenBaseHierarchy<T>>;
 
@@ -113,7 +113,7 @@ namespace EGM {
                         m_curr = rhs.m_curr;
                     }
                     iterator(const OrderedSetDataPolicy& set) : m_set(set) {};
-                    T<ManagedType>& operator*() {
+                    ManagedType& operator*() {
                         return dynamic_cast<ManagedType&>(*getCurr());
                     }
                     ManagedPtr<ManagedType> operator->() {
@@ -195,7 +195,7 @@ namespace EGM {
     template <template <class> class T, class U, class ApiPolicy = DoNothingPolicy>
     class OrderedSet : public ReadOnlyOrderedSet<T, U, ApiPolicy> , public AbstractReadableSet {
 
-        using ManagedType = T<typename U::Manager::template GenBaseHierarchy<T>>;
+        using ManagedType = T<typename U::manager::template GenBaseHierarchy<T>>;
 
         public:
             OrderedSet(U* me) : ReadOnlyOrderedSet<T, U, ApiPolicy>(me) {}
