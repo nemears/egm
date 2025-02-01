@@ -1,0 +1,21 @@
+name: C/C++ CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: configure
+      run: apt-get install -y meson ninja libgtest-dev libgmock-dev libyaml-cpp-dev; mkdir build; meson configure build
+    - name: build
+      run: cd build; meson compile
+    - name: test
+      run: ./egm_tests
