@@ -67,12 +67,12 @@ namespace EGM {
 // macro for setting up monotonous constructor needed for defining compatible policy classes
 #define MANAGED_ELEMENT_CONSTRUCTOR(ElementTypeName) \
     ElementTypeName () : \
-        ManagerPolicy::manager::BaseElement(0, dummyManager), \
-        ManagerPolicy(0, dummyManager) \
+        ManagerPolicy::manager::BaseElement(0, EGM::dummyManager), \
+        ManagerPolicy(0, EGM::dummyManager) \
     { \
         init(); \
     }; \
-    ElementTypeName (std::size_t elementType, AbstractManager& manager) : \
+    ElementTypeName (std::size_t elementType, EGM::AbstractManager& manager) : \
         ManagerPolicy::manager::BaseElement(elementType, manager), \
         ManagerPolicy(elementType, manager) \
     { \

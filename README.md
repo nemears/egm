@@ -4,10 +4,11 @@ EGM which stands for EGM Generic Manager is a C++ header only library to aide in
 
 ## Usage
 
-EGM is made to be used, there is no executable distibuted by EGM, as well as no library. Once you have EGM installed on your system all you have to do is set up your build to include our headers in `include`. Below is a code snippet of a basic usage of EGM, you can find more complex examples in the test files `src/test`.
+EGM is made to be used, there is no executable distibuted by EGM, as well as no library. Once you have EGM installed on your system all you have to do is set up your build to include our headers in `include`. If you want to use all of the features of egm including serialization you must also link your code with [yaml-cpp](https://github.com/jbeder/yaml-cpp). Below is a code snippet of a basic usage of EGM, you can find more complex examples in the test files `src/test`.
 
 ```
 // include egm/egm.h for all headers in the library
+// this would mean that you have to also link with yaml-cpp (see above)
 #include "egm/egm.h"
 
 // All Types needed for EGM must be a policy class like below
@@ -17,12 +18,12 @@ struct BaseType : public ManagerPolicy {
     // an Info must be defined for proper use, this is just a basic DataType with no bases to
     // inherit from so we just need to make Info = TypeInfo<BaseType>
     // It is always safest to put this definition before any sets
-    using Info = TypeInfo<BaseType>;
+    using Info = EGM::TypeInfo<BaseType>;
 
     // Defining a Set of other types, all references to other data must be kept in a set
     // Sets can define how they relate to their polices as well, this one will just make sure
     // that the instance it is referencing also has a reference to it
-    using Set<BaseType, BaseType> = BaseSet;
+    using BaseSet = EGM::Set<BaseType, BaseType>;
     BaseSet references = BaseSet(this);
     BaseSet& getReferences() { return references; }
 
@@ -37,7 +38,7 @@ struct BaseType : public ManagerPolicy {
 
     // Use the macro to cover default constructors with call to init,
     // and the necessary constructor for creation by a manager
-    MANAGED_ELEMENT_CONSTRUCOR(BaseType);
+    MANAGED_ELEMENT_CONSTRUCTOR(BaseType);
 };
 
 // need to define an ElementInfo specialization for serialization implementations
@@ -58,7 +59,7 @@ struct DerivedType : public ManagerPolicy {
     // Define Info this time with TemplateTypeList of just the BaseType, the 
     // type list allows you to provide as many bases as you want, and you
     // don't have to worry about the diamon inheritance problem
-    using Info = TypeInfo<DerivedType, TemplateTypeList<BaseType>>;
+    using Info = EGM::TypeInfo<DerivedType, EGM::TemplateTypeList<BaseType>>;
     
     // a simple data field
     std::string field = "";
@@ -101,7 +102,7 @@ namespace EGM {
 }
 
 // define a manager to control the types
-using CustomManager = Manager<TemplateTypeList<BaseType, DerivedType>>;
+using CustomManager = EGM::Manager<EGM::TemplateTypeList<BaseType, DerivedType>>;
 
 #include <iostram>
 
