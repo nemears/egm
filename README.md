@@ -4,7 +4,7 @@ EGM which stands for EGM Generic Manager is a C++ header only library to aide in
 
 ## Usage
 
-EGM is made to be used, there is no executable distibuted by EGM, as well as no library. Once you have EGM installed on your system all you have to do is set up your build to include our headers in `include`. If you want to use all of the features of egm including serialization you must also link your code with [yaml-cpp](https://github.com/jbeder/yaml-cpp). Below is a code snippet of a basic usage of EGM, you can find more complex examples in the test files `src/test`.
+EGM is made to be used, there is no executable distibuted by EGM, as well as no library. Once you have EGM installed on your system all you have to do is set up your build to include our headers in `include`. If you want to use all of the features of egm including serialization you must also link your code with [yaml-cpp](https://github.com/jbeder/yaml-cpp). Below is a code snippet of a basic usage of EGM, you can find more complex examples in the test files [src/test](https://github.com/nemears/egm/src/test).
 
 ```
 // include egm/egm.h for all headers in the library

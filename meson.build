@@ -6,6 +6,9 @@ if (get_option('buildTests'))
   egm_tests = executable('egm_tests', 
     'src/test/managerTest.cpp', 'src/test/setTest.cpp',
     include_directories: include_dir, 
-    dependencies: [gtest, yaml_cpp])
+    dependencies: [gtest, yaml_cpp],
+    cpp_args: ['-fsanitize=address', '-fno-omit-frame-pointer'],
+    link_args: '-fsanitize=address'
+  )
   test('egm_tests', egm_tests)
 endif

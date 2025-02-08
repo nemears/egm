@@ -904,8 +904,8 @@ namespace EGM {
                 auto node = rootNodes[0];
                 auto it = node.begin();
                 while (it != node.end()) {
-                    const auto& keyNode = it->first;
-                    const auto& valNode = it->second;
+                    const auto keyNode = it->first;
+                    const auto valNode = it->second;
                     if (valNode.IsMap()) {
                         // look up key
                         try {
