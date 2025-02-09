@@ -515,3 +515,73 @@ TEST_F(ManagerTest, testPackageTest) {
     ASSERT_EQ(*pckgdEl->_namespace.get(), *pckg);
     ASSERT_EQ(*pckgdEl->owner.get(), *pckg);
 }
+
+namespace EGM {
+    template <class>
+    struct Innie;
+
+    template <class ManagerPolicy>
+    struct Outtie : public ManagerPolicy {
+        using Info = TypeInfo<Outtie>;
+        using InnieSet = Set<Innie, Outtie>;
+        InnieSet innies = InnieSet(this);
+        void init() {
+            innies.setComposition(CompositionType::COMPOSITE);
+        }
+        MANAGED_ELEMENT_CONSTRUCTOR(Outtie);
+    };
+
+    template <>
+    struct ElementInfo<Outtie> {
+        static std::string name() { return "Outtie"; }
+        template <class Policy>
+        static SetList sets(Outtie<Policy>& el) {
+            return SetList {
+                make_set_pair("innies", el.innies)
+            };
+        }
+    };
+
+    template <class ManagerPolicy>
+    struct Innie : public ManagerPolicy {
+        using Info = TypeInfo<Innie>;
+        void init() {}
+        MANAGED_ELEMENT_CONSTRUCTOR(Innie);
+    };
+
+    template <>
+    struct ElementInfo<Innie> {
+        static std::string name() { return "Innie"; }
+    };
+
+    using InnieOuttieManager = Manager<TemplateTypeList<Outtie, Innie>>;
+}
+
+TEST_F(ManagerTest, emitCompositeSetTest) {
+    InnieOuttieManager m;
+    auto innie = m.create<Innie>();
+    auto outtie = m.create<Outtie>();
+    outtie->setID(ID::fromString("zN&UM2AHrXX07rAiNxTmmMwLYI1O"));
+    innie->setID(ID::fromString("FqaulNq6bCe_8J5M0Ff2oCCaQD05")); 
+    outtie->innies.add(innie);
+    std::string expectedEmit = R""""(Outtie:
+  id: "zN&UM2AHrXX07rAiNxTmmMwLYI1O"
+  innies:
+    - Innie:
+        id: FqaulNq6bCe_8J5M0Ff2oCCaQD05)"""";
+    std::string generatedEmit;
+    ASSERT_NO_THROW(generatedEmit = m.dump(*outtie));
+    std::cout << generatedEmit << '\n';
+    ASSERT_EQ(expectedEmit, generatedEmit);
+}
+
+TEST_F(ManagerTest, parseCompositeSetTest) {
+    InnieOuttieManager m;
+    ASSERT_NO_THROW(m.open("../src/test/parseCompositeTest.yml"));
+    auto el = m.getRoot();
+    ASSERT_EQ(el->getElementType(), InnieOuttieManager::ElementType<Outtie>::result);
+    auto& outtie = el->as<Outtie>();
+    ASSERT_EQ(outtie.innies.size(), 1);
+    auto innie = outtie.innies.front();
+    ASSERT_EQ(innie.id(), ID::fromString("ZhUTBs8FQ2Mgb5XbfCsySrmyrvTh"));
+}
