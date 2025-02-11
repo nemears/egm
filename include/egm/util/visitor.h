@@ -89,6 +89,8 @@ namespace EGM {
                 using NewVisited = typename IntAppend<Visited, FrontID>::type;
                 using NewList = typename TemplateTypeListCat<TemplateTypeList<Rest...>, typename Front<DummyManager::BaseElement>::Info::BaseList>::result;
                 VisitBasesBFS<Visitor, AllTypes, NewList, NewVisited>::visit(visitor);
+            } else {
+                VisitBasesBFS<Visitor, AllTypes, TemplateTypeList<Rest...>, Visited>::visit(visitor);
             }
         }
     };

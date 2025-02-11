@@ -312,10 +312,7 @@ namespace EGM {
                     }
                     if constexpr (HasSets<Type>{}) {
                         for (auto& setPair : Type<BaseElement>::Info::sets(el->template as<Type>())) {
-                            if (setPair.second->readonly()) {
-                                continue;
-                            }
-                            auto set = dynamic_cast<AbstractReadableSet*>(setPair.second);
+                            auto set = setPair.second;
                             if (set->getComposition() != CompositionType::ANTI_COMPOSITE || !set->rootSet()) {
                                 continue;
                             }
