@@ -5,17 +5,6 @@
 #include "egm/manager/dummyManager.h"
 
 namespace EGM {
-    // template <bool IsFirst, class First, class Second>
-    // struct Choose;
-    // template <class First, class Second>
-    // struct Choose<true, First, Second> {
-    //     using result = First;
-    // };
-    // template <class First, class Second>
-    // struct Choose<false, First, Second> {
-    //     using result = Second;
-    // };
-
     template <class List, template <class> class Curr, class AllTypesList, class Bases = typename Curr<DummyManager::BaseElement>::Info::BaseList>
     struct AddChildrenTypes;
 
@@ -103,5 +92,53 @@ namespace EGM {
     template <class Visitor, template <class> class Start, class AllTypes>
     void visitBasesBFS(Visitor& visitor) {
         VisitBasesBFS<Visitor, AllTypes, TemplateTypeList<Start>>::visit(visitor);
+    }
+
+    template <class Queue>
+    struct AllBasesBFS;
+
+    template <template <class> class Front, template <class> class ... Rest>
+    struct AllBasesBFS<TemplateTypeList<Front, Rest...>> {
+        using result = typename TemplateTypeListCat<
+                TemplateTypeList<Front>, 
+                typename AllBasesBFS<
+                    typename TemplateTypeListCat<
+                        TemplateTypeList<Rest...>, 
+                        typename Front<DummyManager::BaseElement>::Info::BaseList
+                    >::result
+                >::result
+            >::result;
+    };
+
+    template <>
+    struct AllBasesBFS<TemplateTypeList<>> {
+        using result = TemplateTypeList<>;
+    };
+
+    template <class Visitor, class AllTypes, class ReverseList, class Visited = IntList<>>
+    struct VisitBasesReverseBFS;
+
+    template <class Visitor, class AllTypes, class Visited>
+    struct VisitBasesReverseBFS<Visitor, AllTypes, TemplateTypeList<>, Visited> {
+        static void visit(__attribute__((unused)) Visitor& visitor) {}
+    };
+
+    template <class Visitor, class AllTypes, template <class> class Last, template <class> class ... Rest, class Visited>
+    struct VisitBasesReverseBFS<Visitor, AllTypes, TemplateTypeList<Last, Rest...>, Visited> {
+        static void visit(Visitor& visitor) {
+            constexpr int last_id = TemplateTypeListIndex<Last, AllTypes>::result;
+            if constexpr (!HasInt<last_id, Visited>::value) {
+                visitor.template visit<Last>();
+                using NewVisited = typename IntAppend<Visited, last_id>::type;
+                VisitBasesReverseBFS<Visitor, AllTypes, TemplateTypeList<Rest...>, NewVisited>::visit(visitor);
+            } else {
+                VisitBasesReverseBFS<Visitor, AllTypes, TemplateTypeList<Rest...>, Visited>::visit(visitor);
+            }
+        }
+    };
+
+    template <class Visitor, class AllTypes, template <class> class Start>
+    void visitBasesReverseBFS(Visitor& visitor) {
+        return VisitBasesReverseBFS<Visitor, AllTypes, typename ReverseList<typename AllBasesBFS<TemplateTypeList<Start>>::result>::result>::visit(visitor);
     }
 }

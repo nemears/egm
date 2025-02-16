@@ -68,4 +68,17 @@ namespace EGM {
     struct TemplateTypeListCat<TemplateTypeList<LeftTypes...>, TemplateTypeList<RightTypes...>> {
         using result = TemplateTypeList<LeftTypes..., RightTypes...>;
     };
+
+    template <class List>
+    struct ReverseList;
+
+    template <template <class> class First, template <class> class ... Rest>
+    struct ReverseList<TemplateTypeList<First, Rest...>> {
+        using result = typename TemplateTypeListCat<typename ReverseList<TemplateTypeList<Rest...>>::result, TemplateTypeList<First>>::result;
+    };
+
+    template <>
+    struct ReverseList<TemplateTypeList<>> {
+        using result = TemplateTypeList<>;
+    };
 }

@@ -353,7 +353,7 @@ namespace EGM {
                         el->setID(ID::fromString(node["id"].as<std::string>()));
                     }
                     ParseCompositeVisitor visitor { el, node, this->m_manager};
-                    visitBasesDFS<ParseCompositeVisitor, Type, Tlist>(visitor);
+                    visitBasesBFS<ParseCompositeVisitor, Type, Tlist>(visitor);
                 }
                 std::string emit(AbstractElementPtr el) const override {
                     if constexpr (typename TypedManager::template IsAbstract<Type>{}) {
@@ -374,7 +374,7 @@ namespace EGM {
                         emitter << YAML::Key << elementName << YAML::Value << YAML::BeginMap;
                         emitter << YAML::Key << "id" << YAML::Value << el.id().string();
                         EmitVisitor visitor {el, emitter};
-                        visitBasesDFS<EmitVisitor, Type, Tlist>(visitor);
+                        visitBasesReverseBFS<EmitVisitor, Tlist, Type>(visitor);
                         emitter << YAML::EndMap;
                         emitter << YAML::EndMap;
 
@@ -391,7 +391,7 @@ namespace EGM {
                         emitter << YAML::Key << "id";
                         emitter << YAML::Value << el.id().string();
                         EmitCompositeVisitor visitor = { el, emitter, this->m_manager };
-                        visitBasesDFS<EmitCompositeVisitor, Type, Tlist>(visitor);
+                        visitBasesReverseBFS<EmitCompositeVisitor, Tlist, Type>(visitor);
                         emitter << YAML::EndMap;
                         emitter << YAML::EndMap;
                     }
