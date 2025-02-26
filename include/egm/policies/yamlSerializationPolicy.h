@@ -168,7 +168,13 @@ namespace EGM {
                                     break;
                                 }
                                 case SetType::SINGLETON : {
-                                    emitter << YAML::Value << set->ids().front().string();
+                                    if (set->getComposition() == CompositionType::COMPOSITE) {
+                                        emitter << YAML::Value;
+                                        auto el = set->beginPtr()->getCurr();
+                                        manager.m_serializationByType.at(el->getElementType())->emitComposite(emitter, el);
+                                    } else {
+                                        emitter << YAML::Value << set->ids().front().string();
+                                    }
                                     break;
                                 }
                                 default:

@@ -69,6 +69,10 @@ namespace EGM {
             using BaseElement = typename TypedManager::BaseElement;
             template <template <class> class Type>
             using ElementType = typename TypedManager::template ElementType<Type>;
+            template <template <class> class Type>
+            using Implementation = Type<typename TypedManager::template GenBaseHierarchy<Type>>;
+            template <template <class> class Type>
+            using Pointer = EGM::ManagedPtr<Implementation<Type>>;
         private:
             // data
             std::unordered_map<ID, std::shared_ptr<ManagerNode>> m_graph;

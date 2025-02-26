@@ -41,7 +41,7 @@
           Name: egm
           Description: generic object pool manager
           Version: 0.0.1
-          Cflags: -I $out/include" > $out/lib/pkgconfig/egm.pc
+          Cflags: -I$out/include" > $out/lib/pkgconfig/egm.pc
         '';
       };
       
