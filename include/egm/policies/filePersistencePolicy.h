@@ -70,7 +70,8 @@ namespace EGM {
                     try {
                         std::filesystem::remove_all(std::filesystem::path(m_mountPath) / "mount");
                     } catch (std::exception& e) {
-                        std::cout << "Persistence policy encountered error deleting mount: " << e.what() << std::endl;
+                        // TODO don't know what to do
+                        // std::cout << "Persistence policy encountered error deleting mount: " << e.what() << std::endl;
                     }
                 }
             }

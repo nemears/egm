@@ -15,6 +15,8 @@ namespace EGM {
 
         friend struct ManagerNode;
         friend class AbstractElement;
+        template <template <class> class, class, class, class>
+        friend class PrivateSet;
         
         public:
             virtual AbstractElementPtr create(std::size_t elementType) = 0;
@@ -30,6 +32,12 @@ namespace EGM {
             virtual void addToSet(AbstractSet& set, AbstractElement& el) const = 0;
             virtual void addToSet(AbstractSet& set, ID id) = 0;
             virtual void runAllAddPolicies(AbstractSet& set, AbstractElement& el) const = 0;
+
+            bool m_runPolicies = true;
+
+            void enablePolicies() { m_runPolicies = true; }
+            void disablePolicies() { m_runPolicies = false; }
+            bool policiesEnabled() const { return m_runPolicies; }
             
             // TODO rest of funcionality interface
     };

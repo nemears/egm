@@ -63,6 +63,10 @@ namespace EGM {
             
 
             void runAddPolicy(AbstractElement& el) override {
+                // check if manager is in state to run add policies
+                if (!m_el.m_manager.policiesEnabled())
+                    return;
+
                 ApiPolicy::elementAdded(dynamic_cast<ManagedType&>(el), m_el);
             }
             void runRemovePolicy(AbstractElement& el) override {

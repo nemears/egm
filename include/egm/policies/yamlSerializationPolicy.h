@@ -366,6 +366,7 @@ namespace EGM {
                         throw ManagerStateException("Error Tried to emit abstract type!");
                     } else {
                         YAML::Emitter emitter;
+                        this->m_manager.primeEmitter(emitter);
                         emitter << YAML::BeginMap;
 
                         // emit scope
@@ -431,12 +432,7 @@ namespace EGM {
                 PopulatePolicies<Tlist>::populate(*this);
             }
         protected:
-            AbstractElementPtr parseIndividual(std::string data) {
-                std::vector<YAML::Node> rootNodes = YAML::LoadAll(data);
-                if (rootNodes.empty()) {
-                    throw SerializationError("could not parse data supplied to manager! Is it JSON or YAML?");
-                }
-                auto node = rootNodes[0];
+            AbstractElementPtr parseNode(YAML::Node node) {
                 auto it = node.begin();
                 while (it != node.end()) {
                     const auto keyNode = it->first;
@@ -460,7 +456,17 @@ namespace EGM {
                 } 
                 throw SerializationError("Could not identify type to parse relevant to this manager!");
             }
+            AbstractElementPtr parseIndividual(std::string data) {
+                std::vector<YAML::Node> rootNodes = YAML::LoadAll(data);
+                if (rootNodes.empty()) {
+                    throw SerializationError("could not parse data supplied to manager! Is it JSON or YAML?");
+                }
+                return parseNode(rootNodes[0]);
+            }
             std::vector<ManagedPtr<AbstractElement>> parseWhole(std::string data) {
+                // policies are supposed to be run once all elements are available 
+                // they should be run after parsing by the manager or the caller
+                this->disablePolicies(); 
                 std::vector<YAML::Node> rootNodes = YAML::LoadAll(data);
                 if (rootNodes.empty()) {
                     throw SerializationError("could not parse data supplied to manager! Is it JSON or YAML?");
@@ -477,11 +483,17 @@ namespace EGM {
                             AbstractElementPtr el = serialization_policy->create();
                             serialization_policy->parseComposite(valNode, el);
                             ret.push_back(el);
-                        } catch (std::exception& e) {
+                        } catch (std::out_of_range& e) {
+                            this->enablePolicies();
                             throw SerializationError("Could not find proper type to parse! line number " + std::to_string(keyNode.Mark().line));
+                        } catch (std::exception& e) {
+                            this->enablePolicies();
+                            throw e;
                         }
                     }
                 }
+
+                this->enablePolicies();
                 return ret;
             }
             std::string emitIndividual(AbstractElement& el) {

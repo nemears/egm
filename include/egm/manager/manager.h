@@ -167,13 +167,11 @@ namespace EGM {
             }
             void restoreElAndOpposites(ManagedPtr<BaseElement> ptr) {
                 // TODO replace
-                auto sets = getAllSets(*ptr);
                 
-                for (auto& pair : sets) {
-                    auto set = pair.second;
-                    std::vector<AbstractElementPtr> els(set->size());
+                this->m_types.at(ptr->getElementType())->forEachSet(*ptr, [](std::string, AbstractSet& set) {
+                    std::vector<AbstractElementPtr> els(set.size());
                     auto i = 0;
-                    for (auto itPtr = set->beginPtr(); *itPtr != *set->endPtr(); itPtr->next()) {
+                    for (auto itPtr = set.beginPtr(); *itPtr != *set.endPtr(); itPtr->next()) {
                         auto elRestore = itPtr->getCurr();
                         els[i] = elRestore;
                         i++;
@@ -183,14 +181,14 @@ namespace EGM {
                             continue;
                         }
                         
-                        set->runAddPolicy(*el);
+                        set.runAddPolicy(*el);
                     }
-                }
-                for (auto& pair : sets) {
-                    auto set = pair.second;
-                    std::vector<AbstractElementPtr> els(set->size());
+                });
+
+                this->m_types.at(ptr->getElementType())->forEachSet(*ptr, [](std::string, AbstractSet& set) {
+                    std::vector<AbstractElementPtr> els(set.size());
                     auto i = 0;
-                    for (auto itPtr = set->beginPtr(); *itPtr != *set->endPtr(); itPtr->next()) {
+                    for (auto itPtr = set.beginPtr(); *itPtr != *set.endPtr(); itPtr->next()) {
                         auto elRestore = itPtr->getCurr();
                         els[i] = elRestore;
                         i++;
@@ -200,11 +198,11 @@ namespace EGM {
                             continue;
                         }
                         
-                        if (!set->subSetContains(el.id())) {
-                            set->addToOpposite(el);
+                        if (!set.subSetContains(el.id())) {
+                            set.addToOpposite(el);
                         }
                     }
-                }
+                });
             }
             void restoreEl(BaseElement& el) {
                 // run add policies we skipped over
