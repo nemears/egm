@@ -57,6 +57,9 @@ namespace EGM {
                         }
                         throw ManagerStateException("Can not convert element to that type!");
                     }
+                    ManagerTypes& getManager() {
+                        return dynamic_cast<ManagerTypes&>(m_manager);
+                    }
             };
 
             template <template <class> class Type>
