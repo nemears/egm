@@ -39,6 +39,8 @@ namespace EGM {
                 virtual void parseBody(YAML::Node, AbstractElementPtr) const = 0;
                 virtual void parseScope(YAML::Node, AbstractElementPtr) const = 0;
                 virtual void parseComposite(YAML::Node, AbstractElementPtr) const = 0;
+                virtual void emitScope(YAML::Emitter&, AbstractElementPtr) const = 0;
+                virtual void emitBody(YAML::Emitter&, AbstractElementPtr) const = 0;
                 virtual std::string emit(AbstractElementPtr) const = 0;
                 virtual void emitComposite(YAML::Emitter& emitter, AbstractElementPtr el) const = 0;
             };
@@ -361,6 +363,18 @@ namespace EGM {
                     ParseCompositeVisitor visitor { el, node, this->m_manager};
                     visitBasesBFS<ParseCompositeVisitor, Type, Tlist>(visitor);
                 }
+                void emitScope(YAML::Emitter& emitter, AbstractElementPtr el) const override {
+                    // emit scope
+                    FindValidScopeVisitor findValidScopeVisitor {el};
+                    visitBasesBFS<FindValidScopeVisitor, Type, Tlist>(findValidScopeVisitor);
+                    if (findValidScopeVisitor.validMatch) {
+                        emitter << YAML::Key << findValidScopeVisitor.validMatch->first << YAML::Value << findValidScopeVisitor.validMatch->second->ids().front().string();
+                    } 
+                }
+                void emitBody(YAML::Emitter& emitter, AbstractElementPtr el) const override {
+                    EmitVisitor visitor {el, emitter};
+                    visitBasesReverseBFS<EmitVisitor, Tlist, Type>(visitor); 
+                }
                 std::string emit(AbstractElementPtr el) const override {
                     if constexpr (typename TypedManager::template IsAbstract<Type>{}) {
                         throw ManagerStateException("Error Tried to emit abstract type!");
@@ -368,20 +382,11 @@ namespace EGM {
                         YAML::Emitter emitter;
                         this->m_manager.primeEmitter(emitter);
                         emitter << YAML::BeginMap;
-
-                        // emit scope
-                        FindValidScopeVisitor findValidScopeVisitor {el};
-                        visitBasesBFS<FindValidScopeVisitor, Type, Tlist>(findValidScopeVisitor);
-                        if (findValidScopeVisitor.validMatch) {
-                            emitter << YAML::Key << findValidScopeVisitor.validMatch->first << YAML::Value << findValidScopeVisitor.validMatch->second->ids().front().string();
-                        }
-
-                        // emit body
+                        emitScope(emitter, el);
                         std::string elementName = Type<DummyManager::BaseElement>::Info::name();
                         emitter << YAML::Key << elementName << YAML::Value << YAML::BeginMap;
                         emitter << YAML::Key << "id" << YAML::Value << el.id().string();
-                        EmitVisitor visitor {el, emitter};
-                        visitBasesReverseBFS<EmitVisitor, Tlist, Type>(visitor);
+                        emitBody(emitter, el);
                         emitter << YAML::EndMap;
                         emitter << YAML::EndMap;
 
@@ -404,8 +409,11 @@ namespace EGM {
                     }
                 }
             };
+
+        protected:
             std::unordered_map<std::string, std::shared_ptr<AbstractSerializationPolicy>> m_serializationByName;
             std::unordered_map<std::size_t, std::shared_ptr<AbstractSerializationPolicy>> m_serializationByType;
+        private:
 
             template <class TypeList, class Dummy = void>
             struct PopulatePolicies;
@@ -432,7 +440,7 @@ namespace EGM {
                 PopulatePolicies<Tlist>::populate(*this);
             }
         protected:
-            AbstractElementPtr parseNode(YAML::Node node) {
+            virtual AbstractElementPtr parseNode(YAML::Node node) {
                 auto it = node.begin();
                 while (it != node.end()) {
                     const auto keyNode = it->first;
@@ -496,7 +504,7 @@ namespace EGM {
                 this->enablePolicies();
                 return ret;
             }
-            std::string emitIndividual(AbstractElement& el) {
+            virtual std::string emitIndividual(AbstractElement& el) {
                 return m_serializationByType.at(el.getElementType())->emit(&el);
             }
             std::string emitWhole(AbstractElement& el) {
