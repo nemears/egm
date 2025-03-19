@@ -12,8 +12,7 @@ namespace EGM {
         LIST,
         BAG
     };
-    std::ostream& operator<<(std::ostream& stream, const SetType& setType);
-
+    
     // This is to convey ownership
     //      COMPOSITE: Element owns all elements in this set
     //      ANTICOMPOSITE: elements in this set must be the owner 
@@ -266,3 +265,15 @@ namespace EGM {
             }
     };    
 }
+
+inline std::ostream& operator<<(std::ostream& stream, const EGM::SetType& setType) {
+    switch (setType) {
+        case EGM::SetType::SET : return stream << "Set";
+        case EGM::SetType::SINGLETON : return stream << "Singleton";
+        case EGM::SetType::ORDERED_SET : return stream << "Ordered Set";
+        case EGM::SetType::LIST : return stream << "List";
+        case EGM::SetType::BAG : return stream << "Bag";
+    }
+    return stream << "** ERROR in EGM::SetType::operator<< Contact Dev! **";
+}
+
