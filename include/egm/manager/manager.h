@@ -395,6 +395,9 @@ namespace EGM {
             void save() {
                 StoragePolicy::saveAll(*getRoot());
             }
+            void for_each_set(BaseElement& el, std::function<void(std::string, AbstractSet&)> f) {
+                this->m_types.at(el.getElementType())->forEachSet(el, f);
+            }
     };
 }
 

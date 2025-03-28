@@ -28,7 +28,7 @@ namespace EGM {
 
     template <class Tlist>
     class YamlSerializationPolicy : virtual public ManagerTypes<Tlist> {
-        private:
+        protected:
             using TypedManager = ManagerTypes<Tlist>;
             using BaseElement = typename TypedManager::BaseElement;
             struct AbstractSerializationPolicy {
@@ -57,6 +57,51 @@ namespace EGM {
                 }
             }
 
+            static void emit_set(YAML::Emitter& emitter, std::string set_name, AbstractSet& set) {
+                if (set.empty() || set.getComposition() == CompositionType::ANTI_COMPOSITE || !set.rootSet()) {
+                    return;
+                }
+
+                // check if subsets have any of our elements
+                std::size_t numElsInSet = set.size();
+                for (auto id : set.ids()) {
+                    auto subSetWithEl = set.subSetContains(id);
+                    if (subSetWithEl) {
+                        numElsInSet--;
+                    }
+                }
+
+                // all in subsets continue
+                if (numElsInSet == 0) {
+                    return;
+                }
+
+
+                emitter << YAML::Key << set_name;
+                switch (set.setType()) {
+                    case SetType::SET:
+                    case SetType::ORDERED_SET:
+                    {
+                        emitter << YAML::BeginSeq;
+                        for (auto id : set.ids()) {
+                            auto subSetWithEl = set.subSetContains(id);
+                            if (subSetWithEl && !subSetWithEl->readonly()) {
+                                continue;
+                            }
+                            emitter << id.string();
+                        }
+                        emitter << YAML::EndSeq;
+                        break;
+                    }
+                    case SetType::SINGLETON : {
+                        emitter << YAML::Value << set.ids().front().string();
+                        break;
+                    }
+                    default:
+                        throw SerializationError("Could not emit, cannot handle set type!");
+                } 
+            }
+
             struct EmitVisitor {
                 ManagedPtr<BaseElement> el;
                 YAML::Emitter& emitter;
@@ -65,49 +110,7 @@ namespace EGM {
                     emitData<Type>(emitter, el->template as<Type>());
                     if constexpr (HasSets<Type>{}) {
                         for (auto& setPair : Type<BaseElement>::Info::sets(el->template as<Type>())) {
-                            auto set = setPair.second;
-                            if (set->empty() || set->getComposition() == CompositionType::ANTI_COMPOSITE || !set->rootSet()) {
-                                continue;
-                            }
-
-                            // check if subsets have any of our elements
-                            std::size_t numElsInSet = set->size();
-                            for (auto id : set->ids()) {
-                                auto subSetWithEl = set->subSetContains(id);
-                                if (subSetWithEl) {
-                                    numElsInSet--;
-                                }
-                            }
-
-                            // all in subsets continue
-                            if (numElsInSet == 0) {
-                                continue;
-                            }
-
-
-                            emitter << YAML::Key << setPair.first;
-                            switch (set->setType()) {
-                                case SetType::SET:
-                                case SetType::ORDERED_SET:
-                                {
-                                    emitter << YAML::BeginSeq;
-                                    for (auto id : set->ids()) {
-                                        auto subSetWithEl = set->subSetContains(id);
-                                        if (subSetWithEl && !subSetWithEl->readonly()) {
-                                            continue;
-                                        }
-                                        emitter << id.string();
-                                    }
-                                    emitter << YAML::EndSeq;
-                                    break;
-                                }
-                                case SetType::SINGLETON : {
-                                    emitter << YAML::Value << set->ids().front().string();
-                                    break;
-                                }
-                                default:
-                                    throw SerializationError("Could not emit, cannot handle set type!");
-                            }
+                            emit_set(emitter, setPair.first, *setPair.second);
                         }
                     }
                 }
@@ -410,7 +413,6 @@ namespace EGM {
                 }
             };
 
-        protected:
             std::unordered_map<std::string, std::shared_ptr<AbstractSerializationPolicy>> m_serializationByName;
             std::unordered_map<std::size_t, std::shared_ptr<AbstractSerializationPolicy>> m_serializationByType;
         private:
@@ -471,7 +473,29 @@ namespace EGM {
                 }
                 return parseNode(rootNodes[0]);
             }
-            std::vector<ManagedPtr<AbstractElement>> parseWhole(std::string data) {
+            // parses nodes compositely
+            // returns root node parsed, or null if couldn't pars
+            virtual ManagedPtr<AbstractElement> parse_composite_node(YAML::Node node) {
+                auto it = node.begin();
+                const auto keyNode = it->first;
+                const auto valNode = it->second;
+                if (valNode.IsMap()) {
+                    try {
+                        auto serialization_policy = m_serializationByName.at(keyNode.as<std::string>());
+                        AbstractElementPtr el = serialization_policy->create();
+                        serialization_policy->parseComposite(valNode, el);
+                        return el;
+                    } catch (std::out_of_range& e) {
+                        this->enablePolicies();
+                        throw SerializationError("Could not find proper type to parse! line number " + std::to_string(keyNode.Mark().line));
+                    } catch (std::exception& e) {
+                        this->enablePolicies();
+                        throw e;
+                    }     
+                } 
+                return AbstractElementPtr();
+            }
+            virtual std::vector<ManagedPtr<AbstractElement>> parseWhole(std::string data) {
                 // policies are supposed to be run once all elements are available 
                 // they should be run after parsing by the manager or the caller
                 this->disablePolicies(); 
@@ -482,23 +506,7 @@ namespace EGM {
                 std::vector<AbstractElementPtr> ret;
                 ret.reserve(rootNodes.size());
                 for (auto node : rootNodes) {
-                    auto it = node.begin();
-                    const auto keyNode = it->first;
-                    const auto valNode = it->second;
-                    if (valNode.IsMap()) {
-                        try {
-                            auto serialization_policy = m_serializationByName.at(keyNode.as<std::string>());
-                            AbstractElementPtr el = serialization_policy->create();
-                            serialization_policy->parseComposite(valNode, el);
-                            ret.push_back(el);
-                        } catch (std::out_of_range& e) {
-                            this->enablePolicies();
-                            throw SerializationError("Could not find proper type to parse! line number " + std::to_string(keyNode.Mark().line));
-                        } catch (std::exception& e) {
-                            this->enablePolicies();
-                            throw e;
-                        }
-                    }
+                    ret.push_back(parse_composite_node(node));
                 }
 
                 this->enablePolicies();
@@ -507,7 +515,7 @@ namespace EGM {
             virtual std::string emitIndividual(AbstractElement& el) {
                 return m_serializationByType.at(el.getElementType())->emit(&el);
             }
-            std::string emitWhole(AbstractElement& el) {
+            virtual std::string emitWhole(AbstractElement& el) {
                 YAML::Emitter emitter;
                 primeEmitter(emitter);
                 m_serializationByType.at(el.getElementType())->emitComposite(emitter, AbstractElementPtr(&el));
