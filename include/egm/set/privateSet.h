@@ -398,6 +398,9 @@ namespace EGM {
             PrivateSet& operator=(PrivateSet& rhs) = delete;
             PrivateSet(PrivateSet& rhs) = delete;
             virtual ~PrivateSet() {}
+            AbstractElement& getOwner() const override {
+                return m_el;
+            }
             bool contains(AbstractElementPtr ptr) const override {
                 if (m_structure->m_rootRedefinedSet.get() != m_structure.get()) {
                     return m_structure->m_rootRedefinedSet->m_set.contains(ptr);

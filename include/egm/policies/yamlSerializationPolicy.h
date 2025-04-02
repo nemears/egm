@@ -41,7 +41,7 @@ namespace EGM {
                 virtual void parseComposite(YAML::Node, AbstractElementPtr) const = 0;
                 virtual void emitScope(YAML::Emitter&, AbstractElementPtr) const = 0;
                 virtual void emitBody(YAML::Emitter&, AbstractElementPtr) const = 0;
-                virtual std::string emit(AbstractElementPtr) const = 0;
+                virtual void emit(YAML::Emitter&, AbstractElementPtr) const = 0;
                 virtual void emitComposite(YAML::Emitter& emitter, AbstractElementPtr el) const = 0;
             };
 
@@ -57,7 +57,7 @@ namespace EGM {
                 }
             }
 
-            static void emit_set(YAML::Emitter& emitter, std::string set_name, AbstractSet& set) {
+            virtual void emit_set(YAML::Emitter& emitter, std::string set_name, AbstractSet& set) {
                 if (set.empty() || set.getComposition() == CompositionType::ANTI_COMPOSITE || !set.rootSet()) {
                     return;
                 }
@@ -110,7 +110,8 @@ namespace EGM {
                     emitData<Type>(emitter, el->template as<Type>());
                     if constexpr (HasSets<Type>{}) {
                         for (auto& setPair : Type<BaseElement>::Info::sets(el->template as<Type>())) {
-                            emit_set(emitter, setPair.first, *setPair.second);
+                            // dispatch 
+                            dynamic_cast<YamlSerializationPolicy&>(el->getManager()).emit_set(emitter, setPair.first, *setPair.second);
                         }
                     }
                 }
@@ -278,6 +279,28 @@ namespace EGM {
                 }
             };
 
+            virtual void parse_set(YAML::Node node, std::string set_name, AbstractSet& set) {
+                if (!set.rootSet()) {
+                    return;
+                }
+
+                if (node[set_name]) {
+                    auto setNode = node[set_name];
+                    if (setNode.IsScalar()) {
+                        if (set.setType() != SetType::SINGLETON) {
+                            throw SerializationError("bad format for " + set_name + ", line number " + std::to_string(setNode.Mark().line));
+                        }
+                        this->addToSet(set, ID::fromString(setNode.template as<std::string>()));
+                    } else if (setNode.IsSequence()) {
+                        for (const auto& valNode : setNode) {
+                            this->addToSet(set, ID::fromString(valNode.template as<std::string>()));
+                        }
+                    } else {
+                        throw SetStateException("Invalid set formatting for individual parsing! line number " + std::to_string(setNode.Mark().line));
+                    }
+                } 
+            }
+
             struct ParseBodyVisitor {
                 ManagedPtr<BaseElement> el;
                 YAML::Node node;
@@ -287,25 +310,7 @@ namespace EGM {
                     parseData<Type>(node, el->template as<Type>());
                     if constexpr (HasSets<Type>{}) {
                         for (auto& setPair : Type<DummyManager::BaseElement>::Info::sets(el->template as<Type>())) {
-                            if (!setPair.second->rootSet()) {
-                                continue;
-                            }
-                            auto set = setPair.second;
-                            if (node[setPair.first]) {
-                                auto setNode = node[setPair.first];
-                                if (setNode.IsScalar()) {
-                                    if (set->setType() != SetType::SINGLETON) {
-                                        throw SerializationError("bad format for " + setPair.first + ", line number " + std::to_string(setNode.Mark().line));
-                                    }
-                                    manager.addToSet(*set, ID::fromString(setNode.template as<std::string>()));
-                                } else if (setNode.IsSequence()) {
-                                    for (const auto& valNode : setNode) {
-                                        manager.addToSet(*set, ID::fromString(valNode.template as<std::string>()));
-                                    }
-                                } else {
-                                    throw SetStateException("Invalid set formatting for individual parsing! line number " + std::to_string(setNode.Mark().line));
-                                }
-                            }
+                            manager.parse_set(node, setPair.first, *setPair.second);
                         }
                     }
                 }
@@ -378,22 +383,16 @@ namespace EGM {
                     EmitVisitor visitor {el, emitter};
                     visitBasesReverseBFS<EmitVisitor, Tlist, Type>(visitor); 
                 }
-                std::string emit(AbstractElementPtr el) const override {
+                void emit(YAML::Emitter& emitter, AbstractElementPtr el) const override {
                     if constexpr (typename TypedManager::template IsAbstract<Type>{}) {
                         throw ManagerStateException("Error Tried to emit abstract type!");
                     } else {
-                        YAML::Emitter emitter;
-                        this->m_manager.primeEmitter(emitter);
-                        emitter << YAML::BeginMap;
                         emitScope(emitter, el);
                         std::string elementName = Type<DummyManager::BaseElement>::Info::name();
                         emitter << YAML::Key << elementName << YAML::Value << YAML::BeginMap;
                         emitter << YAML::Key << "id" << YAML::Value << el.id().string();
                         emitBody(emitter, el);
                         emitter << YAML::EndMap;
-                        emitter << YAML::EndMap;
-
-                        return emitter.c_str();
                     }
                 }
                 void emitComposite(YAML::Emitter& emitter, AbstractElementPtr el) const override {
@@ -512,8 +511,16 @@ namespace EGM {
                 this->enablePolicies();
                 return ret;
             }
+            virtual void emitIndividual(YAML::Emitter& emitter, AbstractElement& el) {
+                m_serializationByType.at(el.getElementType())->emit(emitter, &el);
+            }
             virtual std::string emitIndividual(AbstractElement& el) {
-                return m_serializationByType.at(el.getElementType())->emit(&el);
+                YAML::Emitter emitter;
+                primeEmitter(emitter);
+                emitter << YAML::BeginMap;
+                m_serializationByType.at(el.getElementType())->emit(emitter, &el);
+                emitter << YAML::EndMap;
+                return emitter.c_str();
             }
             virtual std::string emitWhole(AbstractElement& el) {
                 YAML::Emitter emitter;

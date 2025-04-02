@@ -169,6 +169,7 @@ namespace EGM {
                 m_structure->m_rootRedefinedSet.reset();
                 m_structure.reset();
             }
+            virtual AbstractElement& getOwner() const = 0;
             virtual void subsets(AbstractSet& superSet) {
                 auto rootRedefinedSet = m_structure->m_rootRedefinedSet;
                 auto superSetRootRedefinedSet = superSet.m_structure->m_rootRedefinedSet;
