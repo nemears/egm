@@ -35,7 +35,7 @@ namespace EGM {
                 throw ManagerStateException("ERROR DUMMY MANAGER!");
             }
         protected:
-            void reindex(ID , ID) override {
+            AbstractElementPtr reindex(ID , ID) override {
                 throw ManagerStateException("ERROR DUMMY MANAGER!");
             }
             void destroy(ID) override {

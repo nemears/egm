@@ -182,5 +182,10 @@ namespace EGM {
             AbstractElementPtr create(std::size_t elementType) override {
                 return m_types.at(elementType)->create(*this);
             }
+
+            template <template <class> class Type>
+            using Implementation = Type<GenBaseHierarchy<Type>>;
+            template <template <class> class Type>
+            using Pointer = EGM::ManagedPtr<Implementation<Type>>;
     };
 }

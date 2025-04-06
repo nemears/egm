@@ -200,4 +200,8 @@ namespace EGM {
     inline void AbstractElement::removeFromReadonlySet(AbstractSet& set, AbstractElement& el) {
         set.innerRemove(&el);
     }
+    inline void AbstractElement::setID(ID id)  {
+        m_manager.reindex(m_id, id);
+        m_id = id; 
+    } 
 }

@@ -27,7 +27,7 @@ namespace EGM {
             virtual void setRoot(AbstractElementPtr root) = 0;
             virtual void erase(AbstractElement& el) = 0;
         protected:
-            virtual void reindex(ID oldID, ID newID) = 0;
+            virtual AbstractElementPtr reindex(ID oldID, ID newID) = 0;
             virtual void destroy(ID id) = 0;
             virtual void addToSet(AbstractSet& set, AbstractElement& el) const = 0;
             virtual void addToSet(AbstractSet& set, ID id) = 0;

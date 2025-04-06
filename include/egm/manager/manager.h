@@ -67,12 +67,6 @@ namespace EGM {
             using Types = TypePolicyList;
             using TypedManager = ManagerTypes<TypePolicyList>;
             using BaseElement = typename TypedManager::BaseElement;
-            template <template <class> class Type>
-            using ElementType = typename TypedManager::template ElementType<Type>;
-            template <template <class> class Type>
-            using Implementation = Type<typename TypedManager::template GenBaseHierarchy<Type>>;
-            template <template <class> class Type>
-            using Pointer = EGM::ManagedPtr<Implementation<Type>>;
         private:
             // data
             std::unordered_map<ID, std::shared_ptr<ManagerNode>> m_graph;
@@ -89,7 +83,7 @@ namespace EGM {
                 return dynamic_cast<BaseElement*>(ptr.get());
             }
 
-            void reindex(ID oldID, ID newID) override {
+            AbstractElementPtr reindex(ID oldID, ID newID) override {
                 auto oldNode = m_graph.at(oldID);
                 auto el = oldNode->m_ptr;
 
@@ -136,6 +130,8 @@ namespace EGM {
                     ptr->setPtr(el);
                     newNode->m_ptrs.insert(ptr);
                 }
+
+                return el.get();
             }
             void destroy(ID id) override {
                 if (m_destructionFlag) {
