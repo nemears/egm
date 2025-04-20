@@ -59,9 +59,7 @@ namespace EGM {
         protected:
             U& m_el;
             std::unique_ptr<OppositeInterface<ManagedType>> m_opposite = std::unique_ptr<NoOpposite<ManagedType>>(new NoOpposite<ManagedType>());
-    
-            
-
+   
             void runAddPolicy(AbstractElement& el) override {
                 // check if manager is in state to run add policies
                 if (!m_el.m_manager.policiesEnabled())
@@ -82,36 +80,34 @@ namespace EGM {
                 m_opposite->removeOpposite(dynamic_cast<ManagedType&>(el));
             }
             void addToOpposite(AbstractElementPtr ptr) override {
-                {
-                    std::list<std::shared_ptr<SetStructure>> queue;
-                    std::unordered_set<std::shared_ptr<SetStructure>> visited;
-                    queue.push_back(this->m_structure->m_rootRedefinedSet);
-                    while (!queue.empty()) {
-                        auto front = queue.front();
-                        queue.pop_front();
-                        if (visited.count(front)) {
-                            continue;
+                std::list<std::shared_ptr<SetStructure>> queue;
+                std::unordered_set<std::shared_ptr<SetStructure>> visited;
+                queue.push_back(this->m_structure->m_rootRedefinedSet);
+                while (!queue.empty()) {
+                    auto front = queue.front();
+                    queue.pop_front();
+                    if (visited.count(front)) {
+                        continue;
+                    }
+                    visited.insert(front);
+                    bool oppositeRan = false;
+                    if (ptr.loaded()) {
+                        if (!oppositeRan && front->m_set.oppositeEnabled()) {
+                            front->m_set.oppositeAdd(*ptr);
+                            oppositeRan = true;
                         }
-                        visited.insert(front);
-                        bool oppositeRan = false;
+                    }
+                    for (std::shared_ptr<SetStructure> redefinedSet : front->m_redefinedSets) {
                         if (ptr.loaded()) {
-                            if (!oppositeRan && front->m_set.oppositeEnabled()) {
-                                front->m_set.oppositeAdd(*ptr);
+                            if (!oppositeRan && redefinedSet->m_set.oppositeEnabled()) {
+                                redefinedSet->m_set.oppositeAdd(*ptr);
                                 oppositeRan = true;
                             }
                         }
-                        for (std::shared_ptr<SetStructure> redefinedSet : front->m_redefinedSets) {
-                            if (ptr.loaded()) {
-                                if (!oppositeRan && redefinedSet->m_set.oppositeEnabled()) {
-                                    redefinedSet->m_set.oppositeAdd(*ptr);
-                                    oppositeRan = true;
-                                }
-                            }
-                        }
-                        if (!oppositeRan) {
-                            for (std::shared_ptr<SetStructure> superSet : front->m_superSets) {
-                                queue.push_back(superSet);
-                            }
+                    }
+                    if (!oppositeRan) {
+                        for (std::shared_ptr<SetStructure> superSet : front->m_superSets) {
+                            queue.push_back(superSet);
                         }
                     }
                 }
@@ -138,28 +134,35 @@ namespace EGM {
                 // run opposite
                 addToOpposite(ptr);
             }
+            void run_add_policy_for_set(AbstractSet& set, AbstractElement& el) const {
+                set.runAddPolicy(el);
+            }
+            bool check_opposite_enabled_for_set(AbstractSet& set) const {
+                return oppositeEnabled();
+            }
+            void run_add_opposite_for_set(AbstractSet& set, AbstractElement& el) const {
+                set.oppositeAdd(el);
+            }
             void nonOppositeAdd(AbstractElementPtr ptr) override {
                 nonPolicyAdd(ptr);
 
                 // run policies
-                {
-                    std::list<std::shared_ptr<SetStructure>> queue;
-                    std::unordered_set<std::shared_ptr<SetStructure>> visited;
-                    queue.push_back(m_structure->m_rootRedefinedSet);
-                    while (!queue.empty()) {
-                        auto front = queue.front();
-                        queue.pop_front();
-                        if (visited.count(front)) {
-                            continue;
-                        }
-                        visited.insert(front);
-                        front->m_set.runAddPolicy(*ptr);
-                        for (auto redefinedSet : front->m_redefinedSets) {
-                            redefinedSet->m_set.runAddPolicy(*ptr);
-                        }
-                        for (auto superSet : front->m_superSets) {
-                            queue.push_back(superSet);
-                        }
+                std::list<std::shared_ptr<SetStructure>> queue;
+                std::unordered_set<std::shared_ptr<SetStructure>> visited;
+                queue.push_back(m_structure->m_rootRedefinedSet);
+                while (!queue.empty()) {
+                    auto front = queue.front();
+                    queue.pop_front();
+                    if (visited.count(front)) {
+                        continue;
+                    }
+                    visited.insert(front);
+                    front->m_set.runAddPolicy(*ptr);
+                    for (auto redefinedSet : front->m_redefinedSets) {
+                        redefinedSet->m_set.runAddPolicy(*ptr);
+                    }
+                    for (auto superSet : front->m_superSets) {
+                        queue.push_back(superSet);
                     }
                 }
             }
