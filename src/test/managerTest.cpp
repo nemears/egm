@@ -585,3 +585,36 @@ TEST_F(ManagerTest, parseCompositeSetTest) {
     auto innie = outtie.innies.front();
     ASSERT_EQ(innie.id(), ID::fromString("ZhUTBs8FQ2Mgb5XbfCsySrmyrvTh"));
 }
+
+class CreationStoragePolicy {
+    public:
+        ID last_created = ID::nullID();
+    protected:
+        void create_storage(AbstractElement& el) {
+            last_created = el.getID();
+        }
+
+        // doing minimal needed for policy
+        AbstractElementPtr loadElement(ID id) {
+            return AbstractElementPtr();
+        }
+        void saveElement(AbstractElement& el) {
+        }
+        AbstractElementPtr loadAll(std::string path) {
+            return AbstractElementPtr();
+        }
+        AbstractElementPtr loadAll() {
+            return AbstractElementPtr();
+        }
+        void saveAll(AbstractElement& root, std::string location) {}
+        void saveAll(AbstractElement& root) {}
+        void eraseEl(ID id) {}
+};
+
+using CreationStorageTestManager = Manager<TemplateTypeList<Base, Right, Left, Diamond>, CreationStoragePolicy>;
+
+TEST_F(ManagerTest, CreationStorageTest) {
+    CreationStorageTestManager m;
+    auto element = m.create<Diamond>();
+    ASSERT_EQ(m.last_created, element.id());
+}

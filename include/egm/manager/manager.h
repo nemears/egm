@@ -56,6 +56,9 @@ namespace EGM {
             }
     };
 
+      
+
+
     class FilePersistencePolicy;
     template <class>
     class YamlSerializationPolicy;
@@ -194,8 +197,19 @@ namespace EGM {
                             continue;
                         }
                         
-                        if (!set.subSetContains(el.id())) {
-                            set.addToOpposite(el);
+                        if (set.rootSet() && !set.subSetContains(el.id())) {
+                            switch (set.setType()) {
+                                case SetType::SET:
+                                case SetType::SINGLETON:
+                                case SetType::ORDERED_SET: {
+                                    if (!set.contains(el)) {
+                                        set.addToOpposite(el);
+                                    }
+                                    break; 
+                                }
+                                default:
+                                    throw ManagerStateException("TODO");
+                            }
                         }
                     }
                 });
@@ -223,7 +237,11 @@ namespace EGM {
         public:
             template <template <class> class Type>
             ManagedPtr<Type<typename TypedManager::template GenBaseHierarchy<Type>>> create() {
-                return TypedManager::template create<Type>();
+                auto created_element = TypedManager::template create<Type>();
+                if constexpr(requires{StoragePolicy::create_storage(*created_element);}) {
+                    StoragePolicy::create_storage(*created_element);
+                }
+                return created_element;
             }
             // create by type id
             ManagedPtr<AbstractElement> create(std::size_t type) override {
