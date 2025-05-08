@@ -35,7 +35,7 @@ namespace EGM {
                                 if (in[4]) {
                                     // 111111
                                     if (in[5]) {
-                                        return '&';
+                                        return '-';
                                     } 
                                     // 111110
                                     else {
@@ -992,7 +992,7 @@ namespace EGM {
                         boolArr[i+3] = 1;
                         boolArr[i+4] = 1;
                         boolArr[i+5] = 0;
-                    } else if (c == '&') {
+                    } else if (c == '-') {
                         boolArr[i] = 1;
                         boolArr[i+1] = 1;
                         boolArr[i+2] = 1;
@@ -1019,7 +1019,7 @@ namespace EGM {
                 return ret;
             }
             static bool isValid(std::string id) {
-                return std::regex_match (id, std::regex("(?:[A-Za-z0-9_&]{28})"));
+                return std::regex_match (id, std::regex("(?:[A-Za-z0-9_-]{28})"));
             }
     };
 

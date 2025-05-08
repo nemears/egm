@@ -421,8 +421,8 @@ TEST_F(SetTest, iterateOverSubsettedElement) {
     auto a = m.create<TestPackage>();
     auto b = m.create<TestPackage>();
     auto c = m.create<TestPackage>();
-    a->setID(ID::fromString("&90IAqvc&wUnewHz0xLI4fPYNXUe"));
-    b->setID(ID::fromString("04zH_c&oPfM5KXPqJXA0_7AzIzcy"));
+    a->setID(ID::fromString("-90IAqvc-wUnewHz0xLI4fPYNXUe"));
+    b->setID(ID::fromString("04zH_c-oPfM5KXPqJXA0_7AzIzcy"));
     c->setID(ID::fromString("buttEyLdYRCk_zbuttYrQyy42yHr")); 
     // inorder
     //

@@ -561,11 +561,11 @@ TEST_F(ManagerTest, emitCompositeSetTest) {
     InnieOuttieManager m;
     auto innie = m.create<Innie>();
     auto outtie = m.create<Outtie>();
-    outtie->setID(ID::fromString("zN&UM2AHrXX07rAiNxTmmMwLYI1O"));
+    outtie->setID(ID::fromString("zN-UM2AHrXX07rAiNxTmmMwLYI1O"));
     innie->setID(ID::fromString("FqaulNq6bCe_8J5M0Ff2oCCaQD05")); 
     outtie->innies.add(innie);
     std::string expectedEmit = R""""(Outtie:
-  id: "zN&UM2AHrXX07rAiNxTmmMwLYI1O"
+  id: zN-UM2AHrXX07rAiNxTmmMwLYI1O
   innies:
     - Innie:
         id: FqaulNq6bCe_8J5M0Ff2oCCaQD05)"""";
