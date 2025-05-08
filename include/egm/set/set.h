@@ -174,22 +174,27 @@ namespace EGM {
                 return ManagedPtr<ManagedType>();
             }
             ManagedPtr<ManagedType> get(ID id) const {
-                try {
-                    return m_data.at(id);
-                } catch(std::exception& exception) {
-                    for (auto subSetWithData : m_structure->m_subSetsWithData) {
-                        auto subSetDataIt = subSetWithData->m_set.beginPtr();
-                        while (
-                                *subSetDataIt != *subSetWithData->m_set.endPtr() &&
-                                subSetDataIt->getCurr().id() != id
-                        ) {
-                            subSetDataIt->next();
-                        }
-                        if (*subSetDataIt != *subSetWithData->m_set.endPtr()) {
-                            return ManagedPtr<ManagedType>(subSetDataIt->getCurr());
-                        }
+                // check out data
+                auto id_match = m_data.find(id);
+                if (id_match != m_data.end()) {
+                    return id_match->second;
+                }
+
+                // check subsets
+                for (auto subSetWithData : m_structure->m_subSetsWithData) {
+                    auto subSetDataIt = subSetWithData->m_set.beginPtr();
+                    while (
+                            *subSetDataIt != *subSetWithData->m_set.endPtr() &&
+                            subSetDataIt->getCurr().id() != id
+                    ) {
+                        subSetDataIt->next();
+                    }
+                    if (*subSetDataIt != *subSetWithData->m_set.endPtr()) {
+                        return ManagedPtr<ManagedType>(subSetDataIt->getCurr());
                     }
                 }
+
+                // return empty pointer
                 return ManagedPtr<ManagedType>();
             }
             iterator begin() const {
