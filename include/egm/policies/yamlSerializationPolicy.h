@@ -216,7 +216,8 @@ namespace EGM {
 
             template <template <class> class Type>
             static void parseData(YAML::Node node, Type<typename TypedManager::template GenBaseHierarchy<Type>>& el) {
-                if constexpr (HasData<Type>{}) {
+                if constexpr (requires{ElementInfo<Type>::data(el);}) {
+                // if constexpr (HasData<Type>{}) {
                     for (auto& dataPair : Type<BaseElement>::Info::data(el)) {
                         if (node[dataPair.first]) {
                             auto dataNode = node[dataPair.first];
@@ -235,7 +236,7 @@ namespace EGM {
                 template <template <class> class Type>
                 void visit() {
                     parseData<Type>(node, el->template as<Type>());
-                    if constexpr (HasSets<Type>{}) {
+                    if constexpr (requires{ Type<BaseElement>::Info::sets(el-> template as<Type>()); }) {
                         for (auto& setPair : Type<BaseElement>::Info::sets(el-> template as<Type>())) {
                             if (!setPair.second->rootSet()) {
                                 continue;
@@ -518,7 +519,7 @@ namespace EGM {
                 YAML::Emitter emitter;
                 primeEmitter(emitter);
                 emitter << YAML::BeginMap;
-                m_serializationByType.at(el.getElementType())->emit(emitter, &el);
+                emitIndividual(emitter, el);
                 emitter << YAML::EndMap;
                 return emitter.c_str();
             }
@@ -535,6 +536,9 @@ namespace EGM {
             }
             std::string dump(AbstractElement& el) {
                 return this->emitWhole(el);
+            }
+            AbstractElementPtr parse(std::string data) {
+                return this->parseWhole(data)[0];
             }
     };
 
