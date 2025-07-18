@@ -27,6 +27,7 @@ namespace EGM {
                     std::unique_ptr<AbstractSet::iterator> m_redefinedIt = 0;
                     std::unique_ptr<AbstractSet::iterator> m_currSetIt;
                     std::unordered_set<std::size_t> m_visited;
+                public:
                     std::unique_ptr<AbstractSet::iterator> clone() const override {
                         return std::make_unique<iterator>(*this);
                     }
@@ -91,7 +92,6 @@ namespace EGM {
                             m_visited.insert(m_hash);
                         }
                     }
-                public:
                     iterator() {};
                     iterator(const iterator& rhs) : AbstractSet::iterator(rhs) {
                         m_me = rhs.m_me.lock();

@@ -55,7 +55,7 @@ namespace EGM {
                     if (!m_ptr.lock()) {
                         const_cast<ManagedPtr<T>*>(this)->m_ptr = std::dynamic_pointer_cast<T>(temp->m_node.lock()->m_ptr);
                     }
-                    const_cast<ManagedPtr<T>*>(this)->m_node = m_ptr.lock()->m_node.lock();
+                    const_cast<ManagedPtr<T>*>(this)->m_node = m_node.lock();
                     return  m_ptr;
                 }
             }
@@ -87,7 +87,14 @@ namespace EGM {
                 m_id = rhs.m_id;
                 m_node = rhs.m_node;
                 if (m_node.lock()) {
+                    // check if it's a bad cast, make this a null ptr if we can't
                     m_ptr = std::dynamic_pointer_cast<T>(rhs.m_ptr.lock());
+                    if (!m_ptr.lock() && rhs.m_ptr.lock()) {
+                        m_id = ID::nullID();
+                        m_node.reset();
+                        m_ptr.reset();
+                        return; 
+                    }
                     m_node.lock()->addPtr(this);
                 }
             }

@@ -100,10 +100,9 @@ namespace EGM {
                 template <class>
                 friend class IndexablePolicy;
 
-                protected:
-                    virtual std::unique_ptr<iterator> clone() const = 0;
                 public:
                     size_t m_hash = 0;
+                    virtual std::unique_ptr<iterator> clone() const = 0;
                     virtual AbstractElementPtr getCurr() const = 0;
                     virtual void next() = 0;
                     iterator() {}
