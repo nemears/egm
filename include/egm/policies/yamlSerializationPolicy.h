@@ -57,9 +57,9 @@ namespace EGM {
                 }
             }
 
-            virtual void emit_set(YAML::Emitter& emitter, std::string set_name, AbstractSet& set) {
+            bool set_valid_to_emit(AbstractSet& set) {
                 if (set.empty() || set.getComposition() == CompositionType::ANTI_COMPOSITE || !set.rootSet()) {
-                    return;
+                    return false;
                 }
 
                 // check if subsets have any of our elements
@@ -73,9 +73,16 @@ namespace EGM {
 
                 // all in subsets continue
                 if (numElsInSet == 0) {
-                    return;
+                    return false;
                 }
 
+                return true;
+            }
+
+            virtual void emit_set(YAML::Emitter& emitter, std::string set_name, AbstractSet& set) {
+                if (!set_valid_to_emit(set)) {
+                    return;
+                }
 
                 emitter << YAML::Key << set_name;
                 switch (set.setType()) {
