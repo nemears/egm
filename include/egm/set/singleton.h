@@ -73,7 +73,10 @@ namespace EGM {
                 return m_data.has();
             }
             bool containsData(ManagedPtr<T> ptr) const {
-                return ptr.id() == m_data.id(); // TODO rn we are allowing null
+                if (!ptr) {
+                    return false;
+                }
+                return ptr.id() == m_data.id();
             }
             void addData(ManagedPtr<T> ptr) {
                 
