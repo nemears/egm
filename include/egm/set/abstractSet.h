@@ -52,6 +52,8 @@ namespace EGM {
 
         template <class Tlist, class P1>
         friend class Manager;
+        template <class>
+        friend class ManagerTypes;
 
         template <template <class> class T, class U, class DataTypePolicy, class ApiPolicy>
         friend class PrivateSet;

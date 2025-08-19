@@ -164,76 +164,6 @@ namespace EGM {
                     }
                 }
             }
-            void restoreElAndOpposites(ManagedPtr<BaseElement> ptr) {
-                // TODO replace
-                
-                this->m_types.at(ptr->getElementType())->forEachSet(*ptr, [](std::string, AbstractSet& set) {
-                    std::vector<AbstractElementPtr> els(set.size());
-                    auto i = 0;
-                    for (auto itPtr = set.beginPtr(); *itPtr != *set.endPtr(); itPtr->next()) {
-                        auto elRestore = itPtr->getCurr();
-                        els[i] = elRestore;
-                        i++;
-                    }
-                    for (auto el: els) {
-                        if (!el.loaded()) {
-                            continue;
-                        }
-                        
-                        set.runAddPolicy(*el);
-                    }
-                });
-
-                this->m_types.at(ptr->getElementType())->forEachSet(*ptr, [](std::string, AbstractSet& set) {
-                    std::vector<AbstractElementPtr> els(set.size());
-                    auto i = 0;
-                    for (auto itPtr = set.beginPtr(); *itPtr != *set.endPtr(); itPtr->next()) {
-                        auto elRestore = itPtr->getCurr();
-                        els[i] = elRestore;
-                        i++;
-                    }
-                    for (auto el: els) {
-                        if (!el.loaded()) {
-                            continue;
-                        }
-                        
-                        if (set.rootSet() && !set.subSetContains(el.id())) {
-                            switch (set.setType()) {
-                                case SetType::SET:
-                                case SetType::SINGLETON:
-                                case SetType::ORDERED_SET: {
-                                    if (!set.contains(el)) {
-                                        set.addToOpposite(el);
-                                    }
-                                    break; 
-                                }
-                                default:
-                                    throw ManagerStateException("TODO");
-                            }
-                        }
-                    }
-                });
-            }
-            void restoreEl(BaseElement& el) {
-                // run add policies we skipped over
-                // TODO remake
-                this->m_types.at(el.getElementType())->forEachSet(el, [](std::string, AbstractSet& set) {
-                    std::vector<AbstractElementPtr> els(set.size());
-                    auto i = 0;
-                    for (auto itPtr = set.beginPtr(); *itPtr != *set.endPtr(); itPtr->next()) {
-                        auto elRestore = itPtr->getCurr();
-                        els[i] = elRestore;
-                        i++;
-                    }
-                    for (auto el: els) {
-                        if (!el.loaded()) {
-                            continue;
-                        }
-                        
-                        set.runAddPolicy(*el);
-                    }    
-                });
-            }
         public:
             template <template <class> class Type>
             ManagedPtr<Type<typename TypedManager::template GenBaseHierarchy<Type>>> create() {
@@ -290,7 +220,7 @@ namespace EGM {
                 AbstractElementPtr ret = StoragePolicy::loadElement(id);
 
                 if (ret) {
-                    restoreEl(dynamic_cast<BaseElement&>(*ret));
+                    this->restore_el(dynamic_cast<BaseElement&>(*ret));
                 }
 
                 return ret;

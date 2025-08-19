@@ -618,3 +618,50 @@ TEST_F(ManagerTest, CreationStorageTest) {
     auto element = m.create<Diamond>();
     ASSERT_EQ(m.last_created, element.id());
 }
+
+using namespace EGM;
+
+static bool policy_ran = false;
+
+template <class ManagerPolicy>
+struct TypeWithSetPolicy : public ManagerPolicy {
+    using Info = TypeInfo<TypeWithSetPolicy>;
+    struct SetPolicy {
+        void elementAdded(TypeWithSetPolicy& el, TypeWithSetPolicy& me){
+            policy_ran = true;
+        }
+        void elementRemoved(TypeWithSetPolicy& el, TypeWithSetPolicy& me) {}
+    };    
+    using PolicySet = Set<TypeWithSetPolicy, TypeWithSetPolicy,SetPolicy>;
+    PolicySet policy_set = PolicySet(this);
+    void init() {}
+    MANAGED_ELEMENT_CONSTRUCTOR(TypeWithSetPolicy);
+};
+
+
+
+namespace EGM {
+    template<>
+    struct ElementInfo<TypeWithSetPolicy> {
+        static std::string name() { return "TypeWithSetPolicy"; }
+        template <class Policy>
+        static SetList sets(TypeWithSetPolicy<Policy>& el) {
+            return SetList {
+                make_set_pair("policy_set", el.policy_set)
+            };
+        }        
+    };
+}
+
+using ParseAndRunPoliciesManager = Manager<TemplateTypeList<TypeWithSetPolicy>>;
+
+TEST_F(ManagerTest, parseAndRunPoliciesTest) {
+    ParseAndRunPoliciesManager m;
+    std::string parse_input = R"(TypeWithSetPolicy:
+  id: BkO1gSzZzIo8_O6eRnjDKF6CElj8
+  policy_set:
+    - TypeWithSetPolicy:
+        id: 2zEb41aZqh0aVD2Yd1XgSurD2h_m)";
+    auto type_with_set_policy = m.parse(parse_input);
+    ASSERT_TRUE(policy_ran);
+} 

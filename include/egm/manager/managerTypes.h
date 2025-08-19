@@ -143,7 +143,25 @@ namespace EGM {
             };
         protected:
             virtual ManagedPtr<BaseElement> registerPtr(std::shared_ptr<AbstractElement> ptr) = 0;
-
+            void restore_el(BaseElement& el) {
+                // run add policies we skipped over
+                this->m_types.at(el.getElementType())->forEachSet(el, [](std::string, AbstractSet& set) {
+                    std::vector<AbstractElementPtr> els(set.size());
+                    auto i = 0;
+                    for (auto itPtr = set.beginPtr(); *itPtr != *set.endPtr(); itPtr->next()) {
+                        auto elRestore = itPtr->getCurr();
+                        els[i] = elRestore;
+                        i++;
+                    }
+                    for (auto el: els) {
+                        if (!el.loaded()) {
+                            continue;
+                        }
+                        
+                        set.runAddPolicy(*el);
+                    }    
+                });
+            }
         private:
             // IsAbstract Implementation
             template <template <class> class Type>

@@ -236,6 +236,8 @@ namespace EGM {
                 }
             }
 
+            std::unordered_set<ManagedPtr<BaseElement>> parsed_elements;
+
             struct ParseCompositeVisitor {
                 ManagedPtr<BaseElement> el;
                 YAML::Node node;
@@ -256,6 +258,7 @@ namespace EGM {
                                 auto serialization_policy = manager.m_serializationByName.at(keyNode.as<std::string>());
                                 auto elToParse = serialization_policy->create();
                                 serialization_policy->parseComposite(valNode, elToParse); 
+                                manager.parsed_elements.insert(elToParse);
                                 return elToParse;
                             };
                             if (node[setPair.first]) {
@@ -490,6 +493,7 @@ namespace EGM {
                     try {
                         auto serialization_policy = m_serializationByName.at(keyNode.as<std::string>());
                         AbstractElementPtr el = serialization_policy->create();
+                        parsed_elements.insert(el);
                         serialization_policy->parseComposite(valNode, el);
                         return el;
                     } catch (std::out_of_range& e) {
@@ -502,10 +506,12 @@ namespace EGM {
                 } 
                 return AbstractElementPtr();
             }
+
             virtual std::vector<ManagedPtr<AbstractElement>> parseWhole(std::string data) {
                 // policies are supposed to be run once all elements are available 
                 // they should be run after parsing by the manager or the caller
                 this->disablePolicies(); 
+                parsed_elements.clear();
                 std::vector<YAML::Node> rootNodes = YAML::LoadAll(data);
                 if (rootNodes.empty()) {
                     throw SerializationError("could not parse data supplied to manager! Is it JSON or YAML?");
@@ -517,6 +523,13 @@ namespace EGM {
                 }
 
                 this->enablePolicies();
+
+                // run policies
+                for (auto el : parsed_elements) {
+                    this->restore_el(*el);
+                }
+                parsed_elements.clear();
+
                 return ret;
             }
             virtual void emitIndividual(YAML::Emitter& emitter, AbstractElement& el) {
