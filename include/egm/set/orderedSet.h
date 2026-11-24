@@ -195,10 +195,8 @@ namespace EGM {
     
     template <template <class> class T, class U, class ApiPolicy = DoNothingPolicy>
     class OrderedSet : public ReadOnlyOrderedSet<T, U, ApiPolicy> , public AbstractReadableSet {
-
-        using ManagedType = T<typename U::manager::template GenBaseHierarchy<T>>;
-
         public:
+	    using ManagedType = T<typename U::manager::template GenBaseHierarchy<T>>;
             OrderedSet(U* me) : ReadOnlyOrderedSet<T, U, ApiPolicy>(me) {}
             void add(ManagedPtr<ManagedType> ptr) {
                 this->innerAdd(ptr);
