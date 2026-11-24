@@ -36,9 +36,10 @@ namespace EGM {
 
     template <template <class> class T, class U>
     class OrderedSetDataPolicy : virtual public SetDataPolicy<T, U> {
-        protected:
+	public:
             using ManagedType = T<typename U::manager::template GenBaseHierarchy<T>>;
 
+        protected:
             std::shared_ptr<OrderedSetNode<T, typename U::manager>> m_first;
             std::shared_ptr<OrderedSetNode<T, typename U::manager>> m_last;
             
