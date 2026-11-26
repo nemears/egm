@@ -130,7 +130,7 @@ namespace EGM {
             bool hasData() const {
                 return !m_data.empty();
             }
-            bool containsData(ManagedPtr<ManagedType> ptr) const {
+            bool containsData(AbstractElementPtr ptr) const {
                 return m_data.count(ptr.id()) > 0;
             }
             void addData(ManagedPtr<ManagedType> ptr) {
@@ -147,7 +147,7 @@ namespace EGM {
                 }
                 m_data[ptr.id()] = ptr;
             }
-            bool removeData(ManagedPtr<ManagedType> ptr) {
+            bool removeData(AbstractElementPtr ptr) {
                 return m_data.erase(ptr.id()) == 1;
             }
         public:

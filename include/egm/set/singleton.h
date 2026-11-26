@@ -72,7 +72,7 @@ namespace EGM {
             bool hasData() const {
                 return m_data.has();
             }
-            bool containsData(ManagedPtr<T> ptr) const {
+            bool containsData(AbstractElementPtr ptr) const {
                 if (!ptr) {
                     return false;
                 }
@@ -82,7 +82,7 @@ namespace EGM {
                 
                 m_data = ptr;
             }
-            bool removeData(ManagedPtr<T> ptr) {
+            bool removeData(AbstractElementPtr ptr) {
                 if (m_data.id() != ptr.id()) {
                     throw SetStateException("Tried to remove element that was not in singleton");
                 }
